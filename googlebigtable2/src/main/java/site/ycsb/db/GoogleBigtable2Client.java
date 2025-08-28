@@ -45,6 +45,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.TimeUnit;
 import site.ycsb.ByteIterator;
 import site.ycsb.DBException;
 import site.ycsb.Status;
@@ -105,14 +106,14 @@ public class GoogleBigtable2Client extends site.ycsb.DB {
    * client-side consumption of scanned records when the actual scan rate
    * is high and the scan range is large. If set zero, the behavior is disabled.
    */
-  private long maxScanRate = 0;
+  private static long maxScanRate = 0;
 
   /**
    * If true, scanned record will be parsed but not kept in memory.
    * It's useful when doing large but slow scans, so that the client
    * doesn't hit out-of-memory issues.
    */
-  private boolean discardScannedRecord = false;
+  private static boolean discardScannedRecord = false;
 
   /**
    * Thread local Bigtable native API objects.
@@ -181,7 +182,7 @@ public class GoogleBigtable2Client extends site.ycsb.DB {
     maxScanRate =
         Optional.ofNullable(props.getProperty(MAX_SCAN_RATE))
             .map(Long::parseLong)
-            .orElse(0);
+            .orElse(0L);
     discardScannedRecord =
         Optional.ofNullable(props.getProperty(DISCARD_SCANNED_RECORD))
             .map(Boolean::parseBoolean)
