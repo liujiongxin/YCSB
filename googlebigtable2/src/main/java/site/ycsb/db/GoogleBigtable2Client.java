@@ -105,7 +105,7 @@ public class GoogleBigtable2Client extends site.ycsb.DB {
   /**
    * The max number of records to scan per second, used to slow down the
    * client-side consumption of scanned records when the actual scan rate
-   * is high and the scan range is large. If set zero, the behavior is disabled.
+   * is high and the scan range is large. If set zero, there is no throttling.
    */
   private static long maxScanRate = 0;
 
@@ -350,6 +350,7 @@ public class GoogleBigtable2Client extends site.ycsb.DB {
       if (maxScanRate > 0 && rowCount % maxScanRate == 0) {
         long timePassedMillis = System.currentTimeMillis() - rowStartMillis;
         try {
+          // If the argument is less than or equal to zero, do not sleep at all.
           TimeUnit.MILLISECONDS.sleep(1000 - timePassedMillis);
         } catch (InterruptedException e) {
           System.err.println("Exception during scan throttling: " + e);
