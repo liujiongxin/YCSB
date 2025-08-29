@@ -86,13 +86,17 @@ maxscanlength=1000
 
 # On a single scan, the max number of records to scan per second.
 # It's used for rate limiting. No effect if it's zero or larger
-# than the actual scan rate or scan range. Only implemented by
+# than the actual scan rate or scan range. Only used by
 # CloudBigtable2Client.
 maxscanrate=0
 
+# The time limit (in seconds) for a single scan operation.
+# No effect if zero. Only used by CloudBigtable2Client.
+scanoptimelimit=0
+
 # Should the scanned record be discarded or not. For large scans,
 # the client may hit out of memory error if keeping the data
-# in memory. Only implemented by CloudBigtable2Client.
+# in memory. Only used by CloudBigtable2Client.
 discardscannedrecord=false
 
 # The distribution used to choose the number of records to access on a scan

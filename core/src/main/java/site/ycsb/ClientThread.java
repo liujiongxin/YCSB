@@ -118,7 +118,6 @@ public class ClientThread implements Runnable {
         long startTimeNanos = System.nanoTime();
 
         while (((opcount == 0) || (opsdone < opcount)) && !workload.isStopRequested()) {
-          System.out.printf("opcount is %d%n", opcount);
 
           if (!workload.doTransaction(db, workloadstate)) {
             break;

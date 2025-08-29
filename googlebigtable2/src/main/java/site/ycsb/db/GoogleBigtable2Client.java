@@ -68,6 +68,7 @@ public class GoogleBigtable2Client extends site.ycsb.DB {
   private static final String FAMILY_KEY = PROP_PREFIX + ".family";
 
   private static final String MAX_SCAN_RATE = "maxscanrate";
+  private static final String SCAN_OP_TIMELIMIT = "scanoptimelimit";
   private static final String DISCARD_SCANNED_RECORD = "discardscannedrecord";
 
   private static final String MAX_OUTSTANDING_BYTES_KEY = PROP_PREFIX + ".max-outstanding-bytes";
@@ -107,6 +108,13 @@ public class GoogleBigtable2Client extends site.ycsb.DB {
    * is high and the scan range is large. If set zero, the behavior is disabled.
    */
   private static long maxScanRate = 0;
+
+  /**
+   * The time limit of a single scan operation (in seconds). No effect if zero.
+   * It's useful when the scan operation runs very slowly due to intended throttling.
+   * As the operation may take hours to finish, ycsb_timelimit is not well respected.
+   */
+  private static long scanOpTimelimit = 0;
 
   /**
    * If true, scanned record will be parsed but not kept in memory.
@@ -181,6 +189,10 @@ public class GoogleBigtable2Client extends site.ycsb.DB {
 
     maxScanRate =
         Optional.ofNullable(props.getProperty(MAX_SCAN_RATE))
+            .map(Long::parseLong)
+            .orElse(0L);
+    scanOpTimelimit =
+        Optional.ofNullable(props.getProperty(SCAN_OP_TIMELIMIT))
             .map(Long::parseLong)
             .orElse(0L);
     discardScannedRecord =
@@ -316,8 +328,9 @@ public class GoogleBigtable2Client extends site.ycsb.DB {
     }
 
     long rowCount = 0;
-    long startMillis = System.currentTimeMillis();
+    long opStartMillis = System.currentTimeMillis();
     for (Row row : stream) {
+      long rowStartMillis = System.currentTimeMillis();
       HashMap<String, ByteIterator> rowResult = new HashMap<>();
       rowToMap(row, rowResult);
 
@@ -328,15 +341,20 @@ public class GoogleBigtable2Client extends site.ycsb.DB {
       rowCount++;
       results.add(rowResult);
 
+      if (scanOpTimelimit > 0 &&
+          System.currentTimeMillis() - opStartMillis > scanOpTimelimit * 1000) {
+        System.out.println("Stop the scan operation after the specified per-operation time limit");
+        break;
+      }
+
       if (maxScanRate > 0 && rowCount % maxScanRate == 0) {
-        long timePassedMillis = System.currentTimeMillis() - startMillis;
+        long timePassedMillis = System.currentTimeMillis() - rowStartMillis;
         try {
           TimeUnit.MILLISECONDS.sleep(1000 - timePassedMillis);
         } catch (InterruptedException e) {
           System.err.println("Exception during scan throttling: " + e);
           return Status.ERROR;
         }
-        startMillis = System.currentTimeMillis();
       }
     }
     return Status.OK;
